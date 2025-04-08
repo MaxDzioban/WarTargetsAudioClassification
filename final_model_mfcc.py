@@ -1,8 +1,11 @@
-# в папці dataset є у підпапках є файли з аудіо кожного класу,
-# потрібно побудувати по них матрицію. потім взяти з неї std dev and mean 
-# потім позакидати в модельку
+# The 'dataset' folder contains subfolders with
+# audio files for each class.
+# We need to build a feature matrix from these files, 
+# then compute the standard deviation and mean.
+# Finally, these features will be fed into the model.
 
 import os
+import argparse
 import numpy as np
 from scipy.io import wavfile
 from scipy.fftpack import dct
@@ -81,42 +84,42 @@ def extract_feature_vector(filepath):
     mfcc_std = mfcc.std(axis=0)
     return np.concatenate([mfcc_mean, mfcc_std])
 
-def process_dataset_split_by_class(root_dir):
+def process_dataset_split_by_class(root_dir, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+
     for folder in sorted(os.listdir(root_dir)):
         folder_path = os.path.join(root_dir, folder)
         if not os.path.isdir(folder_path):
             continue
 
-        output_file = None
-        if "AR15" in folder.upper():
-            output_file = "ar15_mfcc.csv"
-        elif "SPEECH" in folder.upper():
-            output_file = "speech_mfcc.csv"
-        elif "TANK" in folder.upper():
-            output_file = "tank_mfcc.csv"
-        else:
-            print(f"⚠️ Пропускаю папку: {folder} (невідомий клас)")
-            continue
-
+        class_name = folder.strip().lower()
+        output_file = os.path.join(output_dir, f"{class_name}_mfcc.csv")
         samples = []
 
         for file in os.listdir(folder_path):
-            if file.endswith(".wav"):
+            if file.lower().endswith(".wav"):
                 filepath = os.path.join(folder_path, file)
                 try:
                     features = extract_feature_vector(filepath)
                     samples.append(features)
                 except Exception as e:
-                    print(f"❌ Error processing {filepath}: {e}")
+                    print(f"Error processing {filepath}: {e}")
 
-        samples = np.array(samples)
-        np.savetxt(output_file, samples, delimiter=",", fmt="%.6f")
-        print(f"✅ Збережено {len(samples)} записів у {output_file} з {folder}")
+        if samples:
+            samples = np.array(samples)
+            np.savetxt(output_file, samples, delimiter=",", fmt="%.6f")
+            print(f"Saved {len(samples)} samples to {output_file}")
+        else:
+            print(f"No valid .wav files found in {folder_path}, skipping.")
 
 def main():
-    root_dir = "/Users/max/Downloads/Breast-Cancer-Wisconsin-Diagnostic-Dataset-Analysis-main/done/DATASET_new"
-    process_dataset_split_by_class(root_dir)
-    print("🎯 Успішно створено x.csv (AR15), y.csv (SPEECH), z.csv (TANK)")
+    parser = argparse.ArgumentParser(description="Extract MFCC features and save to CSV per class")
+    parser.add_argument("--input", required=True, help="Path to dataset directory (with class subfolders)")
+    parser.add_argument("--output", default=".", help="Output directory for CSV files (default: current)")
+    args = parser.parse_args()
+
+    process_dataset_split_by_class(args.input, args.output)
+    print("Feature extraction done!")
 
 if __name__ == "__main__":
     main()
