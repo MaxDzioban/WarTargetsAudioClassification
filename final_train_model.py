@@ -1,5 +1,8 @@
+import os
+import argparse
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
@@ -77,87 +80,61 @@ class SVM_OvO:
         return np.argmax(votes, axis=1)
 
 
-def load_data():
-    x = np.loadtxt("ar15_mfcc.csv", delimiter=",")
-    y = np.loadtxt("speech_mfcc.csv", delimiter=",")
-    z = np.loadtxt("tank_mfcc.csv", delimiter=",")
+def load_data(csv_files):
+    data = []
+    labels = []
 
-    X = np.vstack([x, y, z])
-    labels = (
-        [0] * len(x) +  # AR15
-        [1] * len(y) +  # SPEECH
-        [2] * len(z)    # TANK
-    )
-    y_all = np.array(labels)
-    return X, y_all
+    for class_index, file_path in enumerate(csv_files):
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-# ==== Тренування та оцінка ====
+        class_data = np.loadtxt(file_path, delimiter=",")
+        data.append(class_data)
+        labels += [class_index] * len(class_data)
 
-# def main():
-#     X, y = load_data()
+    X = np.vstack(data)
+    y = np.array(labels)
+    return X, y
 
-#     scaler = StandardScaler()
-#     X_scaled = scaler.fit_transform(X)
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train OvO SVM on MFCC CSV data")
+    parser.add_argument("csv_files", nargs="+", help="Paths to CSV files (one per class)")
+    return parser.parse_args()
 
-#     X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, random_state=42)
 
-#     clf = SVM_OvO()
-#     clf.fit(X_train, y_train)
-#     y_pred = clf.predict(X_test)
-
-#     print("✅ Classification report:")
-#     print(classification_report(y_test, y_pred, target_names=["AR15", "SPEECH", "TANK"]))
-
-#     # (необов'язково) візуалізація
-#     plt.scatter(range(len(y_test)), y_test, label="True", marker="o")
-#     plt.scatter(range(len(y_pred)), y_pred, label="Predicted", marker="x")
-#     plt.legend()
-#     plt.title("True vs Predicted Labels")
-#     plt.show()
-import numpy as np
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
-import matplotlib.pyplot as plt
 
 def main():
-    X, y = load_data()
+    args = parse_args()
+    X, y = load_data(args.csv_files)
 
-    # Масштабуємо дані
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
 
-    # Розділяємо на train і test
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.25, random_state=42
-    )
-
-    # Збереження окремих датасетів, якщо потрібно
-    # np.save("X_train.npy", X_train)
-    # np.save("X_test.npy", X_test)
-    # np.save("y_train.npy", y_train)
-    # np.save("y_test.npy", y_test)
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.25, random_state=42)
 
     print(f"Train size: {X_train.shape[0]} samples")
     print(f"Test size: {X_test.shape[0]} samples")
 
-    # Навчання моделі
     clf = SVM_OvO()
     clf.fit(X_train, y_train)
-
-    # Прогноз
     y_pred = clf.predict(X_test)
 
-    # Оцінка
     print("Classification report:")
-    print(classification_report(y_test, y_pred, target_names=["AR15", "SPEECH", "TANK"]))
+    class_names = [os.path.splitext(os.path.basename(f))[0] for f in args.csv_files]
+    print(classification_report(y_test, y_pred, target_names=class_names))
 
-    # Візуалізація
     plt.scatter(range(len(y_test)), y_test, label="True", marker="o")
     plt.scatter(range(len(y_pred)), y_pred, label="Predicted", marker="x")
     plt.legend()
     plt.title("True vs Predicted Labels")
     plt.show()
 
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X_scaled)
+    plt.figure(figsize=(8, 6))
+    scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, cmap="viridis")
+    plt.colorbar(scatter)
+    plt.title("PCA Data Projection")
+    plt.show()
 if __name__ == "__main__":
     main()
