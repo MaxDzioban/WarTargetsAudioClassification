@@ -114,7 +114,7 @@ pip install numpy scikit-learn matplotlib
 This script supports running from the command line with paths to the MFCC .csv files as positional arguments.
 
 ```{bash}
-/opt/homebrew/bin/python3.11 /Users/max/la_pr/final_train_model_argspacw.py \
+/opt/homebrew/bin/python3.11 /Users/max/la_pr/final_train_model.py \
   /Users/max/la_pr/dataset-ar15_mfcc.csv \
   /Users/max/la_pr/dataset-speech_mfcc.csv \
   /Users/max/la_pr/dataset-tank_mfcc.csv
