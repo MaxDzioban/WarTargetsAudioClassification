@@ -1,14 +1,16 @@
 import os
 import argparse
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from mpl_toolkits.mplot3d import Axes3D
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 
 class SVM_classifier():
-    def __init__(self, learning_rate=0.001, no_of_iterations=1000, lambda_parameter=0.01):
+    def __init__(self, learning_rate=0.0001, no_of_iterations=5000, lambda_parameter=0.001):
         self.learning_rate = learning_rate
         self.no_of_iterations = no_of_iterations
         self.lambda_parameter = lambda_parameter
@@ -37,11 +39,17 @@ class SVM_classifier():
             self.w = self.w - self.learning_rate * dw
             self.b = self.b - self.learning_rate * db
 
+    def decision_function(self, X):
+        return np.dot(X, self.w) - self.b
+
+    def predict_proba(self, X):
+        decision = self.decision_function(X)
+        probs = 1 / (1 + np.exp(-decision))
+        return np.vstack([1 - probs, probs]).T
+
     def predict(self, X):
-        output = np.dot(X, self.w) - self.b
-        predicted_labels = np.sign(output)
-        y_hat = np.where(predicted_labels <= -1, 0, 1)
-        return y_hat
+        decision = self.decision_function(X)
+        return np.where(decision >= 0, 1, 0)
 
 
 class SVM_OvO:
@@ -67,17 +75,28 @@ class SVM_OvO:
                 clf.fit(X_pair, y_binary)
                 self.models[(class_i, class_j)] = clf
 
-    def predict(self, X):
-        votes = np.zeros((X.shape[0], len(self.classes)))
-        for (class_i, class_j), clf in self.models.items():
-            pred = clf.predict(X)
-            for index, p in enumerate(pred):
-                if p == 1:
-                    votes[index, class_i] += 1
-                else:
-                    votes[index, class_j] += 1
+    def predict_proba(self, X):
+        prob_votes = np.zeros((X.shape[0], len(self.classes)))
 
-        return np.argmax(votes, axis=1)
+        for (class_i, class_j), clf in self.models.items():
+            prob = clf.predict_proba(X)[:, 1]
+            prob_votes[:, class_i] += prob
+            prob_votes[:, class_j] += (1 - prob)
+
+        prob_votes /= len(self.models)
+        return prob_votes
+
+    def predict(self, X, confidence_threshold=0.45):
+        probas = self.predict_proba(X)
+        predictions = []
+
+        for prob in probas:
+            max_prob = np.max(prob)
+            if max_prob < confidence_threshold:
+                predictions.append(None)
+            else:
+                predictions.append(np.argmax(prob))
+        return predictions
 
 
 def load_data(csv_files):
@@ -101,11 +120,11 @@ def parse_args():
     parser.add_argument("csv_files", nargs="+", help="Paths to CSV files (one per class)")
     return parser.parse_args()
 
-
-
 def main():
     args = parse_args()
     X, y = load_data(args.csv_files)
+
+    CONFIDENCE_THRESHOLD = 0.45 
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
@@ -117,24 +136,54 @@ def main():
 
     clf = SVM_OvO()
     clf.fit(X_train, y_train)
-    y_pred = clf.predict(X_test)
 
-    print("Classification report:")
+    y_pred = clf.predict(X_test, confidence_threshold=CONFIDENCE_THRESHOLD)
+    y_proba = clf.predict_proba(X_test)
+
     class_names = [os.path.splitext(os.path.basename(f))[0] for f in args.csv_files]
-    print(classification_report(y_test, y_pred, target_names=class_names))
+    y_pred_named = [p if p is not None else len(class_names) for p in y_pred]
+    class_names_extended = class_names + ["unknown"]
+
+    print(classification_report(y_test, y_pred_named, target_names=class_names_extended))
+
+    for i, probs in enumerate(y_proba):
+        class_prob_str = ", ".join([f"{class_names[j]}: {probs[j]:.2f}" for j in range(len(class_names))])
+        max_prob = np.max(probs)
+        predicted_class = class_names[np.argmax(probs)]
+        if max_prob < CONFIDENCE_THRESHOLD:
+            print(f"file {i+1}: {class_prob_str} = none class (max {max_prob:.2f})")
+        else:
+            print(f"file {i+1}: {class_prob_str} = {predicted_class} (max {max_prob:.2f})")
 
     plt.scatter(range(len(y_test)), y_test, label="True", marker="o")
-    plt.scatter(range(len(y_pred)), y_pred, label="Predicted", marker="x")
+    plt.scatter(range(len(y_pred_named)), y_pred_named, label="Predicted", marker="x")
     plt.legend()
     plt.title("True vs Predicted Labels")
     plt.show()
 
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=3)
     X_pca = pca.fit_transform(X_scaled)
-    plt.figure(figsize=(8, 6))
-    scatter = plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, cmap="viridis")
-    plt.colorbar(scatter)
-    plt.title("PCA Data Projection")
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(111, projection='3d')
+    scatter = ax.scatter(X_pca[:, 0], X_pca[:, 1], X_pca[:, 2], c=y, cmap="viridis")
+    fig.colorbar(scatter, ax=ax, shrink=0.5, aspect=10)
+    ax.set_xlabel("PCA 1")
+    ax.set_ylabel("PCA 2")
+    ax.set_zlabel("PCA 3")
+    max_range = (X_pca.max(axis=0) - X_pca.min(axis=0)).max() / 2.0
+    mid_x = (X_pca[:, 0].max() + X_pca[:, 0].min()) * 0.5
+    mid_y = (X_pca[:, 1].max() + X_pca[:, 1].min()) * 0.5
+    mid_z = (X_pca[:, 2].max() + X_pca[:, 2].min()) * 0.5
+    ax.set_xlim(mid_x - max_range, mid_x + max_range)
+    ax.set_ylim(mid_y - max_range, mid_y + max_range)
+    ax.set_zlim(mid_z - max_range, mid_z + max_range)
+
+    plt.title("PCA 3D Projection (Cube View)")
     plt.show()
+
+    n_unknown = sum(p is None for p in y_pred)
+    print(f"\n number of files classified as 'unknown': {n_unknown} from {len(y_pred)}")
+
+
 if __name__ == "__main__":
     main()
