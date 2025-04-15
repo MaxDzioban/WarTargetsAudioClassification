@@ -3,3 +3,5 @@ scipy>=1.10
 scikit-learn>=1.2
 matplotlib>=3.7
 librosa>=0.10
+pandas>=1.5
+seaborn>=0.12
