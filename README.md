@@ -1,7 +1,9 @@
 # War Targets Audio Classification
 
-`mp3_to_wav` python script converts an MP3 audio file into multiple WAV file chunks of a specified duration using ffmpeg. It splits audio into evenly timed chunks (default: 6 seconds). Automatically creates the output directory if it doesn't exist.
-
+To install the requirements, run in terminal (inside the same folder):
+```{bash}
+pip install -r requirements.txt
+```
 `ffmpeg` and `ffprobe` must be installed and available in your system’s PATH.
 
 You can install ffmpeg using:
@@ -12,6 +14,9 @@ brew install ffmpeg
 # Ubuntu/Debian
 sudo apt install ffmpeg
 ```
+
+
+`mp3_to_wav` python script converts an MP3 audio file into multiple WAV file chunks of a specified duration using ffmpeg. It splits audio into evenly timed chunks (default: 6 seconds). Automatically creates the output directory if it doesn't exist.
 
 Usage
 ```{bash}
@@ -39,11 +44,6 @@ Each WAV file will be named as:
 - Saves extracted features in class-wise CSV files
 - Uses optimized NumPy operations and supports batch processing
 - Designed for datasets organized into subdirectories per class
-
-Requirements
-- Python 3.x
-- NumPy
-- SciPy
 
 The dataset folder should be structured as follows:
 ```{bash}
@@ -105,11 +105,6 @@ Each CSV file contains one row per audio sample, where each row is a feature vec
 - Trains one classifier for every pair of classes (e.g., AR15 vs Speech).
 - Performs **majority voting** across all binary classifiers during prediction.
 
-Install the required packages with:
-
-```bash
-pip install numpy scikit-learn matplotlib
-```
 
 This script supports running from the command line with paths to the MFCC .csv files as positional arguments.
 
