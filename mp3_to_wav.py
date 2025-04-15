@@ -3,6 +3,27 @@ import subprocess
 import argparse
 from math import ceil
 
+def split_mp3_to_chunks(input_file, output_dir, chunk_duration):
+    os.makedirs(output_dir, exist_ok=True)
+    duration = get_duration(input_file)
+    if duration < chunk_duration:
+        print(f"File '{input_file}' is too short ({duration:.2f}s < {chunk_duration}s). Skipping.")
+        return
+    num_chunks = ceil(duration / chunk_duration)
+    for i in range(num_chunks):
+        start = i * chunk_duration
+        output_path = os.path.join(output_dir, f"{os.path.splitext(os.path.basename(input_file))[0]}_{i+1:03}.wav")
+        subprocess.run([
+            "ffmpeg", "-y", "-i", input_file,
+            "-ss", str(start),
+            "-t", str(chunk_duration),
+            output_path
+        ])
+        print(f"Saved: {output_path}")
+    print("All chunks saved!")
+
+
+
 def get_duration(filename):
     result = subprocess.run(
         ["ffprobe", "-v", "error", "-show_entries",
@@ -10,27 +31,6 @@ def get_duration(filename):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     return float(result.stdout)
-
-def split_mp3_to_chunks(input_file, output_dir, chunk_duration):
-    os.makedirs(output_dir, exist_ok=True)
-
-    duration = get_duration(input_file)
-    num_chunks = ceil(duration / chunk_duration)
-
-    for i in range(num_chunks):
-        start = i * chunk_duration
-        output_path = os.path.join(output_dir, f"{os.path.splitext(os.path.basename(input_file))[0]}_{i+1:03}.wav")
-
-        subprocess.run([
-            "ffmpeg", "-y", "-i", input_file,
-            "-ss", str(start),
-            "-t", str(chunk_duration),
-            output_path
-        ])
-
-        print(f"Saved: {output_path}")
-
-    print("All chunks saved!")
 
 def main():
     parser = argparse.ArgumentParser(description="Convert MP3 to WAV chunks")
