@@ -95,18 +95,25 @@ The input data must be in the form of **CSV files**:
 
 Each CSV file contains one row per audio sample, where each row is a feature vector (e.g., concatenation of MFCC mean and standard deviation values).
 
-##### `SVM_classifier`
-- Custom binary linear SVM.
-- Uses stochastic gradient descent to minimize hinge loss with L2 regularization.
-- Supports binary labels (`-1` and `1`).
+#### `final_train_model.py`
+Custom Binary SVM:
+-   Uses Stochastic Gradient Descent (SGD) to minimize hinge loss with L2 regularization.
+-   Supports binary labels (-1 and 1).
+-   Outputs both class predictions and probabilistic confidence (via sigmoid).
 
-##### `SVM_OvO`
-- One-vs-One strategy for multiclass classification.
-- Trains one classifier for every pair of classes (e.g., AR15 vs Speech).
-- Performs **majority voting** across all binary classifiers during prediction.
+Multiclass OvO Strategy:
 
+- Trains K*(K-1)/2 binary classifiers for K classes.
+- Uses soft-voting based on classifier probabilities to assign final labels.
+- Handles low-confidence predictions by labeling them as unknown (if max prob < 0.45).
 
-This script supports running from the command line with paths to the MFCC .csv files as positional arguments.
+Command-line Interface:
+- Accepts any number of class-specific CSV files as positional arguments.
+- Automatically assigns labels by order of CSV file.
+
+Visualization Tools:
+- Compares predicted vs. true class labels in a scatter plot.
+- 3D PCA projection of the full dataset for visual inspection.
 
 ```{bash}
 /opt/homebrew/bin/python3.11 /Users/max/la_pr/final_train_model.py \
