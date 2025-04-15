@@ -115,3 +115,19 @@ This script supports running from the command line with paths to the MFCC .csv f
   /Users/max/la_pr/dataset-tank_mfcc.csv
 ```
 
+##### MFCC Visualizer
+
+This script generates visualizations of MFCC feature data extracted from audio files. It supports plotting the number of samples per class, PCA projections of the feature space, and Kernel Density Estimation (KDE) - based distributions of the first three MFCC coefficients.
+
+Usage:
+
+Run the script with one of the available plot types:
+
+```bash
+python mfcc_visualizer.py --input path/to/csv_folder --plot count
+python mfcc_visualizer.py --input path/to/csv_folder --plot pca
+python mfcc_visualizer.py --input path/to/csv_folder --plot mfcc
+```
+
+Each *_mfcc.csv file in the input folder should correspond to a class and contain MFCC feature vectors.
+
