@@ -11,7 +11,7 @@ def get_duration(filename):
         stderr=subprocess.STDOUT)
     return float(result.stdout)
 
-def split_mp3_to_chunks(input_file, output_dir, chunk_duration):
+def split_mp3_to_chunks(input_file, output_dir, chunk_duration=6):
     os.makedirs(output_dir, exist_ok=True)
 
     duration = get_duration(input_file)
