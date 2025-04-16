@@ -123,3 +123,22 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+def process_flat_wav_folder(input_dir, output_csv_path):
+    samples = []
+
+    for file in os.listdir(input_dir):
+        if file.lower().endswith(".wav"):
+            filepath = os.path.join(input_dir, file)
+            try:
+                features = extract_feature_vector(filepath)
+                samples.append(features)
+            except Exception as e:
+                print(f"Error processing {filepath}: {e}")
+
+    if samples:
+        samples = np.array(samples)
+        np.savetxt(output_csv_path, samples, delimiter=",", fmt="%.6f")
+        print(f"Saved {len(samples)} MFCC vectors to {output_csv_path}")
+    else:
+        print("No valid .wav files found.")
