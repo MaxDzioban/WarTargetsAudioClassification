@@ -138,3 +138,37 @@ python mfcc_visualizer.py --input path/to/csv_folder --plot mfcc
 
 Each *_mfcc.csv file in the input folder should correspond to a class and contain MFCC feature vectors.
 
+### Web Application Deployment
+
+To facilitate easy usage of the developed audio classification pipeline without requiring command-line interaction, we designed and implemented a lightweight web application based on the **Flask** framework.
+
+The full classification process is wrapped into a Python function `run_pipeline(filepath)`, which accepts a path to an audio file in either `.mp3` or `.wav` format.  
+The processing flow inside `run_pipeline` consists of the following steps:
+
+1. If an `.mp3` file is provided, it is automatically converted into multiple `.wav` chunks using `split_mp3_to_chunks`.
+2. If a `.wav` file is provided, it is segmented directly using `split_wav_to_chunks`.
+3. The resulting audio chunks are processed by the `process_flat_wav_folder` function to extract MFCC features and save them into a CSV file.
+4. The MFCC feature vectors are then passed into the `predict_with_pretrained` function, which loads a pretrained SVM model and predicts the corresponding class labels for each chunk.
+
+The web interface allows users to either:
+- Upload a local audio file (`.mp3` or `.wav`),
+- Or specify the path to an existing audio file on the server.
+
+Upon submission, the backend executes `run_pipeline` and captures both the standard output (logs) and the predicted classes. The web page then displays:
+- The predicted class for each audio chunk,
+- Any generated logs for debugging and transparency,
+- Possible errors (e.g., invalid file types or non-existent paths).
+
+Uploaded temporary files are automatically deleted after processing to maintain server hygiene.
+
+The server listens on all available interfaces (`0.0.0.0`) at port `5001` with `debug` mode enabled during development. A simple HTML template (`index.html`) provides the user interface.
+
+This web-based deployment significantly improves accessibility and practical usability of the developed model, allowing users to classify battlefield audio samples easily without any programming knowledge.
+
+---
+
+### Web Interface Example
+
+![Web Interface Screenshot](templates/index.png)
+
+*Figure 1: Web interface of the audio classification application. Users can upload an audio file or specify its path, trigger the classification pipeline, and view both the classification results and processing logs.*
