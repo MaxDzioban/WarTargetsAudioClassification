@@ -15,7 +15,6 @@ def index():
     predictions = None
     output_logs = None
     error = None
-
     if request.method == 'POST':
         filepath = None
         if 'file' in request.files and request.files['file'].filename != '':
@@ -26,22 +25,25 @@ def index():
         elif 'filepath' in request.form and request.form['filepath'] != '':
             filepath = request.form['filepath']
             if not os.path.exists(filepath):
-                error = "Файл за вказаним шляхом не існує."
+                error = "The specified file path does not exist."
                 return render_template('index.html', predictions=predictions, error=error, output_logs=output_logs)
         else:
-            error = "Не обрано файл і не вказано шлях."
+            error = "No file uploaded and no path specified."
             return render_template('index.html', predictions=predictions, error=error, output_logs=output_logs)
+        
         try:
             old_stdout = sys.stdout
             sys.stdout = mystdout = io.StringIO()
             predictions = run_pipeline(filepath)
             output_logs = mystdout.getvalue()
             if not predictions:
-                error = "Не вдалося визначити предикти."
+                error = "Failed to determine predictions."
         finally:
             sys.stdout = old_stdout
             if 'uploads' in filepath:
                 os.remove(filepath)
+
     return render_template('index.html', predictions=predictions, error=error, output_logs=output_logs)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)
