@@ -169,6 +169,6 @@ This web-based deployment significantly improves accessibility and practical usa
 
 ### Web Interface Example
 
-![Web Interface Screenshot](templates/index.png)
+![Web Interface Screenshot](images/index.png)
 
 *Figure 1: Web interface of the audio classification application. Users can upload an audio file or specify its path, trigger the classification pipeline, and view both the classification results and processing logs.*
