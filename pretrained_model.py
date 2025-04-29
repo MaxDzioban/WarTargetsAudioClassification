@@ -77,12 +77,20 @@ def predict_with_pretrained(vector_file, bundle_path="model_bundle.pkl"):
 
     X_scaled = scaler.transform(X)
     y_pred = clf.predict(X_scaled, confidence_threshold=threshold)
-
+    
+    # for i, pred in enumerate(y_pred):
+    #     if pred is None:
+    #         print(f"Sample {i + 1}: Unknown class")
+    #     else:
+    #         print(f"Sample {i + 1}: {class_names[pred]}")
+    
+    predictions = []
     for i, pred in enumerate(y_pred):
         if pred is None:
-            print(f"Sample {i + 1}: Unknown class")
+            predictions.append("Unknown class")
         else:
-            print(f"Sample {i + 1}: {class_names[pred]}")
+            predictions.append(class_names[pred])
+    return predictions
 
 
 def parse_args():
